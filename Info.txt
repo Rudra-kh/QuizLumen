@@ -1,0 +1,289 @@
+# Decentralized Quiz dApp
+
+A fully decentralized quiz application built on the Stellar blockchain using Soroban smart contracts. Users pay a registration fee in XLM to participate, and the top 3 performers share the prize pool.
+
+## ✨ NEW: Quiz Creator Feature
+
+**Create and share custom quizzes!** Users can now:
+- 🎨 Create quizzes manually or upload question files
+- 📁 Upload JSON/JavaScript files with questions
+- 🔗 Generate unique shareable links
+- 👥 Invite unlimited participants
+- 💾 Download quiz templates and backups
+
+👉 **See [QUIZ_CREATOR_GUIDE.md](./QUIZ_CREATOR_GUIDE.md) for detailed instructions**
+
+## Tech Stack
+
+- **Smart Contract**: Soroban (Rust)
+- **Frontend**: React
+- **Wallet Integration**: Freighter Wallet
+- **Blockchain**: Stellar Network
+
+## Project Overview
+
+This dApp allows users to:
+1. Connect their Freighter wallet
+2. **[NEW] Create custom quizzes or take existing ones**
+3. Pay a registration fee (e.g., 10 XLM) to enter the quiz
+4. Answer quiz questions
+5. Compete for prizes distributed to the top 3 participants
+
+The smart contract handles:
+- Registration fee collection
+- Participant management
+- Answer submission and scoring
+- Prize distribution (50% to 1st place, 30% to 2nd, 20% to 3rd)
+
+## Project Structure
+
+```
+quiz-dapp/
+├── smart-contract/          # Soroban smart contract (Rust)
+│   ├── src/
+│   │   └── lib.rs          # Main contract logic
+│   ├── Cargo.toml
+│   └── README.md
+└── frontend/                # React dApp
+    ├── src/
+    │   ├── components/
+    │   │   ├── WalletConnect.js
+    │   │   ├── Registration.js
+    │   │   ├── QuizInterface.js
+    │   │   ├── QuizCreator.js      # ✨ NEW: Create custom quizzes
+    │   │   ├── Leaderboard.js
+    │   │   └── AdminPanel.js
+    │   ├── services/
+    │   │   └── contractService.js
+    │   ├── App.js
+    │   └── index.js
+    ├── quiz-template.json   # ✨ NEW: Sample quiz format
+    ├── package.json
+    └── README.md
+```
+
+## Smart Contract Functions
+
+### Public Functions
+- `initialize(admin: Address, fee_amount: u128, fee_token: Address)` - Set up the quiz with admin and fee parameters
+- `register(participant: Address)` - Register a user and collect the fee
+- `submit_answers(participant: Address, answers_hash: BytesN<32>)` - Submit quiz answers as a hash
+- `get_quiz_state()` - Get current quiz state (Pending/Open/Closed)
+- `get_leaderboard()` - View final results and winners
+
+### Admin-Only Functions
+- `end_quiz(admin: Address)` - Close the quiz and calculate winners
+- `distribute_prizes(admin: Address)` - Send prizes to top 3 winners
+
+## Prerequisites
+
+### For Smart Contract Development
+- Rust (latest stable version)
+- Soroban CLI: `cargo install --locked soroban-cli`
+- Stellar account with testnet XLM
+
+### For Frontend Development
+- Node.js (v16 or higher)
+- npm or yarn
+- Freighter Wallet browser extension
+
+## Installation & Setup
+
+### 1. Smart Contract Setup
+
+```bash
+# Create the smart contract project
+soroban contract init quiz-contract
+cd quiz-contract
+
+# Install dependencies (they should be in Cargo.toml)
+cargo build --target wasm32-unknown-unknown --release
+```
+
+### 2. Frontend Setup
+
+```bash
+# Create React app
+npx create-react-app quiz-frontend
+cd quiz-frontend
+
+# Install dependencies
+npm install stellar-sdk @stellar/freighter-api
+```
+
+## Smart Contract Implementation
+
+### Contract Storage Structure
+
+```rust
+// Define storage keys
+pub enum DataKey {
+    Admin,
+    QuizState,
+    RegistrationFee,
+    FeeToken,
+    PrizePool,
+    Participants,
+    Scores,
+    Winners,
+}
+
+// Quiz states
+pub enum QuizState {
+    Pending,
+    Open,
+    Closed,
+}
+```
+
+### Key Functions to Implement
+
+1. **Token Transfer Logic**: Use Soroban's token interface to transfer XLM from user to contract
+2. **Participant Management**: Store participants in a Map structure
+3. **Answer Verification**: Compare answer hashes for scoring
+4. **Prize Calculation**: Distribute 50/30/20 split to top 3
+5. **Access Control**: Ensure only admin can call admin functions
+
+## Frontend Implementation
+
+### Core Components
+
+1. **WalletConnect.js**
+   - Connect/disconnect Freighter wallet
+   - Display user's public key and balance
+
+2. **Registration.js**
+   - Show registration fee
+   - Build and submit register transaction
+   - Handle Freighter approval flow
+
+3. **QuizInterface.js**
+   - Display quiz questions
+   - Collect user answers
+   - Hash answers and submit to contract
+
+4. **Leaderboard.js**
+   - Fetch and display quiz results
+   - Show top 3 winners and prize amounts
+
+5. **AdminPanel.js**
+   - End quiz functionality
+   - Distribute prizes button
+   - Quiz state management
+
+### Contract Service Example
+
+```javascript
+// services/contractService.js
+import * as StellarSdk from 'stellar-sdk';
+import { getPublicKey, signTransaction } from '@stellar/freighter-api';
+
+export async function registerForQuiz(contractId, fee) {
+  const publicKey = await getPublicKey();
+  
+  // Build transaction to call register function
+  const contract = new StellarSdk.Contract(contractId);
+  const transaction = // ... build transaction
+  
+  // Send to Freighter for signing
+  const signedTx = await signTransaction(transaction.toXDR());
+  
+  // Submit to network
+  // ... submit logic
+}
+```
+
+## Environment Variables
+
+Create `.env` files for configuration:
+
+### Frontend `.env`
+```
+REACT_APP_CONTRACT_ID=<deployed_contract_id>
+REACT_APP_NETWORK_PASSPHRASE=Test SDF Network ; September 2015
+REACT_APP_HORIZON_URL=https://horizon-testnet.stellar.org
+```
+
+## User Flow
+
+1. **User visits dApp** → Connects Freighter wallet
+2. **User clicks "Register"** → Freighter popup shows fee (10 XLM) → User approves
+3. **Contract receives payment** → User added to participants list
+4. **User takes quiz** → Submits answers (as hash)
+5. **Admin ends quiz** → Contract calculates top 3 scores
+6. **Admin distributes prizes** → Winners receive XLM automatically
+
+## Fee Payment Flow
+
+```
+User Wallet (Freighter)
+    ↓ (User approves 10 XLM transfer)
+Smart Contract Address
+    ↓ (Prize pool accumulates)
+Top 3 Winners
+    ↓ (Admin triggers distribution)
+    - 1st place: 50% of pool
+    - 2nd place: 30% of pool
+    - 3rd place: 20% of pool
+```
+
+## Security Considerations
+
+1. **Answer Hashing**: Store only hashes on-chain to prevent cheating and reduce costs
+2. **Authorization**: All participant functions require user signature
+3. **Admin Controls**: Critical functions (end_quiz, distribute_prizes) restricted to admin
+4. **Reentrancy Protection**: Use Soroban's built-in protections
+5. **Fee Validation**: Verify exact fee amount is transferred
+
+## Testing
+
+### Smart Contract Tests
+```bash
+cd quiz-contract
+cargo test
+```
+
+### Frontend Tests
+```bash
+cd quiz-frontend
+npm test
+```
+
+### Manual Testing on Testnet
+1. Deploy contract to Stellar Testnet
+2. Fund test accounts with testnet XLM from Friendbot
+3. Test full registration and quiz flow
+4. Verify prize distribution
+
+## Resources
+
+- [Soroban Documentation](https://soroban.stellar.org/docs)
+- [Soroban Examples GitHub](https://github.com/stellar/soroban-examples)
+- [Stellar SDK Documentation](https://stellar.github.io/js-stellar-sdk/)
+- [Freighter API Documentation](https://docs.freighter.app/)
+- [Stellar Laboratory](https://laboratory.stellar.org/) - For testing transactions
+
+## Roadmap & Future Enhancements
+
+- [ ] Multiple quiz support
+- [ ] Question categories and difficulty levels
+- [ ] Time-limited quizzes
+- [ ] Automated scoring with oracle integration
+- [ ] Mobile app version
+- [ ] Support for multiple Stellar assets as fees
+- [ ] Recurring tournaments with leaderboard history
+
+## License
+
+MIT License
+
+## Support
+
+For issues and questions:
+- Stellar Discord: https://discord.gg/stellar
+- Soroban Developer Community
+- GitHub Issues (if repository is public)
+
+---
+
+**Note**: This is a complex project requiring solid understanding of blockchain development, Rust, and React. Start with Soroban tutorials and examples before building this application.
