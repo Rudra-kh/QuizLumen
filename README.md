@@ -42,6 +42,7 @@ Make creating and running quizzes simple, transparent, and verifiable by leverag
 
 - Contract ID: `CC5476DPOKNBJGMGXYP4OPLOVYOBKVWQIJHNIPNDD6E3QYAYXMF7QM3D`
 - Explorer: https://stellar.expert/explorer/testnet/contract/CC5476DPOKNBJGMGXYP4OPLOVYOBKVWQIJHNIPNDD6E3QYAYXMF7QM3D
+- ![alt text](image-1.png)
 
 ## Quickstart — Development
 
@@ -101,5 +102,5 @@ soroban contract invoke --id <CONTRACT_ID> --network testnet --source mykey -- i
 - `frontend/src/services/contractService.js` — contract calls and normalization helpers
 - `smart-contract/quiz-contract/contracts/quiz-contract/src/lib.rs` — Soroban contract implementation
 
-![alt text](image-1.png)
+
 # QuizLumen
